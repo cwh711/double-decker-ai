@@ -439,7 +439,7 @@ public class SolitaireGame extends JFrame {
             List<Card> pile = state.valuePiles.get(rank);
             Card top = cardShownForValuePile(rank, pile);
             updateCardButton(button, top, rank.label + "\n(" + pile.size() + ")");
-            button.putClientProperty("dragSelection", top == null ? null : new DragSelection(rank, null).encode());
+            button.putClientProperty("dragSelection", pile.isEmpty() ? null : new DragSelection(rank, null).encode());
             button.setBorder(UIManager.getBorder("Button.border"));
         }
 
