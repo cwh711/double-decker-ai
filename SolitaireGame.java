@@ -419,8 +419,11 @@ public class SolitaireGame extends JFrame {
                 JComponent source = (JComponent) e.getSource();
                 Object payload = source.getClientProperty("dragSelection");
                 if (payload != null) {
-                    dragPreviewSelection = DragSelection.decode(payload.toString());
-                    refreshUi();
+                    DragSelection selection = DragSelection.decode(payload.toString());
+                    if (selection.valueRank() != null) {
+                        dragPreviewSelection = selection;
+                        refreshUi();
+                    }
                     source.getTransferHandler().exportAsDrag(source, e, TransferHandler.COPY);
                 }
             }
