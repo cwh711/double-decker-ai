@@ -296,6 +296,7 @@ public class SolitaireGame extends JFrame {
     private final JLabel drawLabel = new JLabel();
     private final JLabel statusLabel = new JLabel("Welcome to Two-Deck Solitaire");
     private final Map<String, ImageIcon> iconCache = new HashMap<>();
+    private DragSelection dragPreviewSelection;
 
     public SolitaireGame(long seed) {
         super("Two-Deck Solitaire (GUI)");
@@ -418,6 +419,8 @@ public class SolitaireGame extends JFrame {
                 JComponent source = (JComponent) e.getSource();
                 Object payload = source.getClientProperty("dragSelection");
                 if (payload != null) {
+                    dragPreviewSelection = DragSelection.decode(payload.toString());
+                    refreshUi();
                     source.getTransferHandler().exportAsDrag(source, e, TransferHandler.COPY);
                 }
             }
@@ -431,7 +434,7 @@ public class SolitaireGame extends JFrame {
             Rank rank = Rank.values()[i];
             JButton button = valuePileButtons[i];
             List<Card> pile = state.valuePiles.get(rank);
-            Card top = pile.isEmpty() ? null : pile.get(pile.size() - 1);
+            Card top = cardShownForValuePile(rank, pile);
             updateCardButton(button, top, rank.label + "\n(" + pile.size() + ")");
             button.putClientProperty("dragSelection", top == null ? null : new DragSelection(rank, null).encode());
             button.setBorder(UIManager.getBorder("Button.border"));
@@ -470,6 +473,16 @@ public class SolitaireGame extends JFrame {
 
         heldCardsPanel.revalidate();
         heldCardsPanel.repaint();
+    }
+
+    private Card cardShownForValuePile(Rank rank, List<Card> pile) {
+        if (pile.isEmpty()) {
+            return null;
+        }
+        if (dragPreviewSelection != null && dragPreviewSelection.valueRank() == rank) {
+            return pile.size() > 1 ? pile.get(pile.size() - 2) : null;
+        }
+        return pile.get(pile.size() - 1);
     }
 
     private void updateCardButton(JButton button, Card card, String fallbackText) {
@@ -533,7 +546,7 @@ public class SolitaireGame extends JFrame {
         return null;
     }
 
-    private static class DragSourceTransferHandler extends TransferHandler {
+    private class DragSourceTransferHandler extends TransferHandler {
         @Override
         protected Transferable createTransferable(JComponent c) {
             Object payload = c.getClientProperty("dragSelection");
@@ -546,6 +559,12 @@ public class SolitaireGame extends JFrame {
         @Override
         public int getSourceActions(JComponent c) {
             return COPY;
+        }
+
+        @Override
+        protected void exportDone(JComponent source, Transferable data, int action) {
+            dragPreviewSelection = null;
+            refreshUi();
         }
     }
 
