@@ -6,6 +6,11 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,6 +25,7 @@ import java.util.Random;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -27,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 
 public class SolitaireGame extends JFrame {
@@ -78,6 +85,25 @@ public class SolitaireGame extends JFrame {
         @Override
         public String toString() {
             return rank.label + suit.symbol;
+        }
+    }
+
+    record DragSelection(Rank valueRank, Integer heldIndex) {
+        String encode() {
+            if (valueRank != null) {
+                return "VALUE:" + valueRank.name();
+            }
+            return "HELD:" + heldIndex;
+        }
+
+        static DragSelection decode(String encoded) {
+            if (encoded.startsWith("VALUE:")) {
+                return new DragSelection(Rank.valueOf(encoded.substring("VALUE:".length())), null);
+            }
+            if (encoded.startsWith("HELD:")) {
+                return new DragSelection(null, Integer.parseInt(encoded.substring("HELD:".length())));
+            }
+            throw new IllegalArgumentException("Unknown drag payload: " + encoded);
         }
     }
 
@@ -271,9 +297,6 @@ public class SolitaireGame extends JFrame {
     private final JLabel statusLabel = new JLabel("Welcome to Two-Deck Solitaire");
     private final Map<String, ImageIcon> iconCache = new HashMap<>();
 
-    private Rank selectedValueRank;
-    private Integer selectedHeldIndex;
-
     public SolitaireGame(long seed) {
         super("Two-Deck Solitaire (GUI)");
         this.state = new GameState(seed);
@@ -285,7 +308,10 @@ public class SolitaireGame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(12, 12));
 
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        add(buildTableauPanel(), BorderLayout.NORTH);
+        add(buildValuePilesPanel(), BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         JButton drawButton = new JButton("Draw");
         drawButton.addActionListener(e -> onDraw());
 
@@ -293,7 +319,7 @@ public class SolitaireGame extends JFrame {
         drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
         drawPanel.add(drawButton);
         drawPanel.add(drawLabel);
-        topPanel.add(drawPanel, BorderLayout.WEST);
+        bottomPanel.add(drawPanel, BorderLayout.WEST);
 
         JPanel heldPanel = new JPanel(new BorderLayout(8, 8));
         heldPanel.setBorder(BorderFactory.createTitledBorder("Picked-up Value Pile"));
@@ -301,18 +327,13 @@ public class SolitaireGame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(heldCardsPanel);
         scrollPane.setPreferredSize(new Dimension(680, 120));
         heldPanel.add(scrollPane, BorderLayout.CENTER);
-        topPanel.add(heldPanel, BorderLayout.CENTER);
-        add(topPanel, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel(new GridLayout(2, 1, 8, 8));
-        centerPanel.add(buildValuePilesPanel());
-        centerPanel.add(buildTableauPanel());
-        add(centerPanel, BorderLayout.CENTER);
+        bottomPanel.add(heldPanel, BorderLayout.CENTER);
 
         statusLabel.setOpaque(true);
         statusLabel.setBackground(new Color(245, 245, 245));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-        add(statusLabel, BorderLayout.SOUTH);
+        bottomPanel.add(statusLabel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         setSize(980, 700);
         setLocationRelativeTo(null);
@@ -320,7 +341,7 @@ public class SolitaireGame extends JFrame {
 
     private JPanel buildValuePilesPanel() {
         JPanel panel = new JPanel(new GridLayout(1, 13, 4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder("Value Piles (click to play top card)"));
+        panel.setBorder(BorderFactory.createTitledBorder("Value Piles (drag top card onto a tableau)"));
 
         Rank[] ranks = Rank.values();
         for (int i = 0; i < ranks.length; i++) {
@@ -329,7 +350,7 @@ public class SolitaireGame extends JFrame {
             button.setVerticalTextPosition(SwingConstants.BOTTOM);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
-            button.addActionListener(e -> onSelectValuePile(rank));
+            installDragSource(button);
             valuePileButtons[i] = button;
             panel.add(button);
         }
@@ -339,14 +360,13 @@ public class SolitaireGame extends JFrame {
 
     private JPanel buildTableauPanel() {
         JPanel panel = new JPanel(new GridLayout(2, 4, 6, 6));
-        panel.setBorder(BorderFactory.createTitledBorder("Tableaus (click destination after selecting source card)"));
+        panel.setBorder(BorderFactory.createTitledBorder("Tableaus (drop cards here)"));
 
         for (int i = 0; i < 8; i++) {
             JButton button = new JButton();
-            int tableauIndex = i;
             button.setVerticalTextPosition(SwingConstants.BOTTOM);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
-            button.addActionListener(e -> onPlayToTableau(tableauIndex));
+            button.setTransferHandler(new TableauTransferHandler(i));
             tableauButtons[i] = button;
             panel.add(button);
         }
@@ -356,7 +376,6 @@ public class SolitaireGame extends JFrame {
 
     private void onDraw() {
         boolean drew = state.draw();
-        clearSelection();
 
         if (!drew) {
             statusLabel.setText("Draw pile is empty.");
@@ -370,34 +389,19 @@ public class SolitaireGame extends JFrame {
         }
     }
 
-    private void onSelectValuePile(Rank rank) {
-        selectedValueRank = rank;
-        selectedHeldIndex = null;
-        statusLabel.setText("Selected top card from " + rank.label + " pile. Click a tableau to play.");
-        refreshUi();
-    }
-
-    private void onSelectHeldCard(int heldIndex, Card card) {
-        selectedHeldIndex = heldIndex;
-        selectedValueRank = null;
-        statusLabel.setText("Selected held card " + card + ". Click a tableau to play.");
-        refreshUi();
-    }
-
-    private void onPlayToTableau(int tableauIndex) {
+    private void onDropToTableau(DragSelection selection, int tableauIndex) {
         boolean success = false;
 
-        if (selectedValueRank != null) {
-            success = state.playFromValuePile(selectedValueRank, tableauIndex);
-        } else if (selectedHeldIndex != null) {
-            success = state.playFromHeldIndex(selectedHeldIndex, tableauIndex);
+        if (selection.valueRank() != null) {
+            success = state.playFromValuePile(selection.valueRank(), tableauIndex);
+        } else if (selection.heldIndex() != null) {
+            success = state.playFromHeldIndex(selection.heldIndex(), tableauIndex);
         }
 
         if (success) {
             statusLabel.setText("Card placed on tableau " + (tableauIndex + 1) + ".");
-            clearSelection();
         } else {
-            statusLabel.setText("Illegal move or no source card selected.");
+            statusLabel.setText("Illegal move.");
         }
 
         refreshUi();
@@ -406,9 +410,18 @@ public class SolitaireGame extends JFrame {
         }
     }
 
-    private void clearSelection() {
-        selectedValueRank = null;
-        selectedHeldIndex = null;
+    private void installDragSource(JButton button) {
+        button.setTransferHandler(new DragSourceTransferHandler());
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                JComponent source = (JComponent) e.getSource();
+                Object payload = source.getClientProperty("dragSelection");
+                if (payload != null) {
+                    source.getTransferHandler().exportAsDrag(source, e, TransferHandler.COPY);
+                }
+            }
+        });
     }
 
     private void refreshUi() {
@@ -420,12 +433,8 @@ public class SolitaireGame extends JFrame {
             List<Card> pile = state.valuePiles.get(rank);
             Card top = pile.isEmpty() ? null : pile.get(pile.size() - 1);
             updateCardButton(button, top, rank.label + "\n(" + pile.size() + ")");
-
-            if (selectedValueRank == rank) {
-                button.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
-            } else {
-                button.setBorder(UIManager.getBorder("Button.border"));
-            }
+            button.putClientProperty("dragSelection", top == null ? null : new DragSelection(rank, null).encode());
+            button.setBorder(UIManager.getBorder("Button.border"));
         }
 
         for (int i = 0; i < state.tableaus.size(); i++) {
@@ -453,11 +462,8 @@ public class SolitaireGame extends JFrame {
                     cardButton.setVerticalTextPosition(SwingConstants.BOTTOM);
                     cardButton.setHorizontalTextPosition(SwingConstants.CENTER);
                 }
-                cardButton.addActionListener(e -> onSelectHeldCard(index, card));
-
-                if (selectedHeldIndex != null && selectedHeldIndex == index) {
-                    cardButton.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
-                }
+                cardButton.putClientProperty("dragSelection", new DragSelection(null, index).encode());
+                installDragSource(cardButton);
                 heldCardsPanel.add(cardButton);
             }
         }
@@ -525,6 +531,51 @@ public class SolitaireGame extends JFrame {
 
         iconCache.put(cacheKey, null);
         return null;
+    }
+
+    private static class DragSourceTransferHandler extends TransferHandler {
+        @Override
+        protected Transferable createTransferable(JComponent c) {
+            Object payload = c.getClientProperty("dragSelection");
+            if (payload == null) {
+                return null;
+            }
+            return new StringSelection(payload.toString());
+        }
+
+        @Override
+        public int getSourceActions(JComponent c) {
+            return COPY;
+        }
+    }
+
+    private class TableauTransferHandler extends TransferHandler {
+        private final int tableauIndex;
+
+        TableauTransferHandler(int tableauIndex) {
+            this.tableauIndex = tableauIndex;
+        }
+
+        @Override
+        public boolean canImport(TransferSupport support) {
+            return support.isDataFlavorSupported(DataFlavor.stringFlavor);
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            try {
+                String payload = (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor);
+                onDropToTableau(DragSelection.decode(payload), tableauIndex);
+                return true;
+            } catch (Exception e) {
+                statusLabel.setText("Could not read dragged card.");
+                return false;
+            }
+        }
     }
 
     public static void main(String[] args) {
