@@ -24,7 +24,7 @@ hs_err_pid*
 replay_pid*
 
 # IDE-specific files
-./.idea/*
+.idea/
 
 # OS-specific files
-*/.DS_Store
+.DS_Store
