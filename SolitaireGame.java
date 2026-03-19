@@ -295,7 +295,7 @@ public class SolitaireGame extends JFrame {
         }
     }
 
-    private final GameState state;
+    private GameState state;
     private final JButton[] valuePileButtons = new JButton[Rank.values().length];
     private final JButton[] tableauButtons = new JButton[8];
     private final JPanel heldCardsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
@@ -304,6 +304,7 @@ public class SolitaireGame extends JFrame {
     private final JLabel statusLabel = new JLabel("Welcome to Two-Deck Solitaire");
     private final Map<String, ImageIcon> iconCache = new HashMap<>();
     private DragSelection dragPreviewSelection;
+    private boolean gameOverDialogShown;
 
     public SolitaireGame(long seed) {
         super("Two-Deck Solitaire (GUI)");
@@ -322,10 +323,13 @@ public class SolitaireGame extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         JButton drawButton = new JButton("Draw");
         drawButton.addActionListener(e -> onDraw());
+        JButton newGameButton = new JButton("New Game");
+        newGameButton.addActionListener(e -> startNewGame());
 
         JPanel drawPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
         drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
         drawPanel.add(drawButton);
+        drawPanel.add(newGameButton);
         drawPanel.add(drawLabel);
         bottomPanel.add(drawPanel, BorderLayout.WEST);
 
@@ -414,16 +418,33 @@ public class SolitaireGame extends JFrame {
         showGameOverDialogIfNeeded();
     }
 
+    private void startNewGame() {
+        state = new GameState(System.currentTimeMillis());
+        dragPreviewSelection = null;
+        gameOverDialogShown = false;
+        statusLabel.setText("Started a new game.");
+        refreshUi();
+    }
+
     private void showGameOverDialogIfNeeded() {
-        if (!state.isGameOver()) {
+        if (!state.isGameOver() || gameOverDialogShown) {
             return;
         }
 
-        JOptionPane.showMessageDialog(
+        gameOverDialogShown = true;
+        Object[] options = {"New Game", "Close"};
+        int choice = JOptionPane.showOptionDialog(
                 this,
                 "Draw pile is empty and no legal moves remain.\nScore: " + state.score + "/" + TOTAL_CARDS,
                 "Game Over",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]);
+        if (choice == 0) {
+            startNewGame();
+        }
     }
 
     private void installDragSource(JButton button) {
