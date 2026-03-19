@@ -324,7 +324,7 @@ public class SolitaireGame extends JFrame {
         JButton drawButton = new JButton("Draw");
         drawButton.addActionListener(e -> onDraw());
         JButton newGameButton = new JButton("New Game");
-        newGameButton.addActionListener(e -> startNewGame());
+        newGameButton.addActionListener(e -> confirmAndStartNewGame());
 
         JPanel drawPanel = new JPanel(new BorderLayout(8, 8));
         drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
@@ -418,6 +418,18 @@ public class SolitaireGame extends JFrame {
 
         refreshUi();
         showGameOverDialogIfNeeded();
+    }
+
+    private void confirmAndStartNewGame() {
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Start a new game? Your current progress will be lost.",
+                "Confirm New Game",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (choice == JOptionPane.OK_OPTION) {
+            startNewGame();
+        }
     }
 
     private void startNewGame() {
