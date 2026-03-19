@@ -151,6 +151,7 @@ public class SolitaireGame extends JFrame {
         List<Card> heldPile;
         Rank heldRank;
         Card lastDrawnCard;
+        int score;
 
         GameState(long seed) {
             for (Rank rank : Rank.values()) {
@@ -240,6 +241,7 @@ public class SolitaireGame extends JFrame {
             }
             pile.remove(pile.size() - 1);
             tableau.place(card);
+            score++;
             return true;
         }
 
@@ -254,6 +256,7 @@ public class SolitaireGame extends JFrame {
             }
             heldPile.remove(cardIndex);
             tableau.place(card);
+            score++;
             return true;
         }
 
@@ -385,9 +388,7 @@ public class SolitaireGame extends JFrame {
         }
 
         refreshUi();
-        if (state.isGameOver()) {
-            JOptionPane.showMessageDialog(this, "Draw pile is empty and no legal moves remain.", "Game Over", JOptionPane.INFORMATION_MESSAGE);
-        }
+        showGameOverDialogIfNeeded();
     }
 
     private void onDropToTableau(DragSelection selection, int tableauIndex) {
@@ -406,9 +407,19 @@ public class SolitaireGame extends JFrame {
         }
 
         refreshUi();
-        if (state.isGameOver()) {
-            JOptionPane.showMessageDialog(this, "Draw pile is empty and no legal moves remain.", "Game Over", JOptionPane.INFORMATION_MESSAGE);
+        showGameOverDialogIfNeeded();
+    }
+
+    private void showGameOverDialogIfNeeded() {
+        if (!state.isGameOver()) {
+            return;
         }
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Draw pile is empty and no legal moves remain.\nScore: " + state.score,
+                "Game Over",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void installDragSource(JButton button) {
