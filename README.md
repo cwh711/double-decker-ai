@@ -20,11 +20,13 @@ java SolitaireGame 42
 - The **tableaus** are shown at the top of the window.
 - The **draw pile** and **picked-up value pile** are shown at the bottom.
 - Click **Draw** to draw from the face-down draw pile.
+- Click **New Game** at any time to reshuffle and start over without restarting the app; the app asks for confirmation before discarding the current run.
 - Drawing automatically returns any currently held pile, then picks up the pile matching the drawn card value and places the drawn card on the bottom.
 - To play a card to a tableau:
   - Drag a **value pile** to play its top card, or
   - Drag a specific card from the **held pile** panel,
   - Then drop it onto the target **tableau**.
+- When the game ends, the dialog also offers a **New Game** option for immediately starting another run.
 
 Tableau order:
 - `1-4`: build up (`A→K`) for Clubs, Diamonds, Hearts, Spades
