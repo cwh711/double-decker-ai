@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -425,7 +427,8 @@ public class SolitaireGame extends JFrame {
     }
 
     private void installDragSource(JButton button) {
-        button.setTransferHandler(new DragSourceTransferHandler());
+        DragSourceTransferHandler transferHandler = new DragSourceTransferHandler();
+        button.setTransferHandler(transferHandler);
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -433,6 +436,7 @@ public class SolitaireGame extends JFrame {
                 Object payload = source.getClientProperty("dragSelection");
                 if (payload != null) {
                     DragSelection selection = DragSelection.decode(payload.toString());
+                    transferHandler.configureDragImage(button, e.getPoint());
                     if (selection.valueRank() != null) {
                         dragPreviewSelection = selection;
                         refreshUi();
@@ -563,6 +567,20 @@ public class SolitaireGame extends JFrame {
     }
 
     private class DragSourceTransferHandler extends TransferHandler {
+        void configureDragImage(JButton button, Point dragOrigin) {
+            Icon icon = button.getIcon();
+            if (icon instanceof ImageIcon imageIcon) {
+                setDragImage(imageIcon.getImage());
+                setDragImageOffset(new Point(
+                        Math.min(dragOrigin.x, imageIcon.getIconWidth() - 1),
+                        Math.min(dragOrigin.y, imageIcon.getIconHeight() - 1)));
+                return;
+            }
+
+            setDragImage(null);
+            setDragImageOffset(new Point());
+        }
+
         @Override
         protected Transferable createTransferable(JComponent c) {
             Object payload = c.getClientProperty("dragSelection");
