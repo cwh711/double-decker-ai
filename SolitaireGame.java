@@ -326,11 +326,13 @@ public class SolitaireGame extends JFrame {
         JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> startNewGame());
 
-        JPanel drawPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        JPanel drawPanel = new JPanel(new BorderLayout(8, 8));
         drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
-        drawPanel.add(drawButton);
-        drawPanel.add(newGameButton);
-        drawPanel.add(drawLabel);
+        JPanel drawControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        drawControlsPanel.add(drawButton);
+        drawControlsPanel.add(drawLabel);
+        drawPanel.add(drawControlsPanel, BorderLayout.CENTER);
+        drawPanel.add(newGameButton, BorderLayout.SOUTH);
         bottomPanel.add(drawPanel, BorderLayout.WEST);
 
         JPanel heldPanel = new JPanel(new BorderLayout(8, 8));
