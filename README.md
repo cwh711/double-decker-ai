@@ -19,6 +19,7 @@ You can also build and run tests with Maven:
 
 ```bash
 mvn package
+java -jar target/double-decker-ai-1.0-SNAPSHOT.jar
 mvn test
 ```
 
@@ -49,9 +50,7 @@ The UI supports card images named as:
 
 Examples: `hearts_a.png`, `clubs_10.png`, `spades_k.png`.
 
-Images are loaded from either:
-- `cards/` directory (preferred), or
-- project root.
+When built with Maven, the generated jar bundles the `cards/` images and loads them from the classpath automatically. During local development, the UI can still fall back to loading from `cards/` or the project root.
 
 Empty tableau piles can additionally use `[suit]_empty.png` images, such as `clubs_empty.png` or `hearts_empty.png`.
 
