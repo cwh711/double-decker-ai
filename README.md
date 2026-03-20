@@ -15,6 +15,13 @@ Optionally pass a numeric seed for deterministic shuffles:
 java SolitaireGame 42
 ```
 
+You can also build and run tests with Maven:
+
+```bash
+mvn package
+mvn test
+```
+
 ## How to play in the GUI
 
 - The **tableaus** are shown at the top of the window.
