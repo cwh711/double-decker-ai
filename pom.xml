@@ -11,6 +11,7 @@
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <main.class>SolitaireGame</main.class>
     </properties>
 
     <dependencies>
@@ -25,6 +26,15 @@
     <build>
         <sourceDirectory>${project.basedir}</sourceDirectory>
         <testSourceDirectory>${project.basedir}</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/cards</directory>
+                <targetPath>cards</targetPath>
+                <includes>
+                    <include>**/*.png</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -47,6 +57,18 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${main.class}</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>

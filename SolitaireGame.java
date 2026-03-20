@@ -12,8 +12,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -320,14 +319,30 @@ public class SolitaireGame extends JFrame {
             return iconCache.get(cacheKey);
         }
 
-        Path[] candidates = {
-            Path.of("cards", fileName),
-            Path.of(fileName)
+        String[] resourceCandidates = {
+            "/cards/" + fileName,
+            "/" + fileName
         };
 
-        for (Path candidate : candidates) {
-            if (Files.exists(candidate)) {
-                ImageIcon raw = new ImageIcon(candidate.toString());
+        for (String resourceCandidate : resourceCandidates) {
+            URL resource = getClass().getResource(resourceCandidate);
+            if (resource != null) {
+                ImageIcon raw = new ImageIcon(resource);
+                Image scaled = raw.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                ImageIcon icon = new ImageIcon(scaled);
+                iconCache.put(cacheKey, icon);
+                return icon;
+            }
+        }
+
+        String[] fileCandidates = {
+            "cards/" + fileName,
+            fileName
+        };
+
+        for (String fileCandidate : fileCandidates) {
+            ImageIcon raw = new ImageIcon(fileCandidate);
+            if (raw.getIconWidth() > 0 && raw.getIconHeight() > 0) {
                 Image scaled = raw.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
                 ImageIcon icon = new ImageIcon(scaled);
                 iconCache.put(cacheKey, icon);
