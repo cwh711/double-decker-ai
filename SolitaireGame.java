@@ -3,12 +3,9 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.Insets;
 import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -29,7 +26,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
@@ -131,13 +127,11 @@ public class SolitaireGame extends JFrame {
     }
 
     private JPanel buildTableauPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Tableaus (drop cards here)"));
 
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridy = 0;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weighty = 1.0;
+        JPanel upPanel = new JPanel(new GridLayout(1, 4, 6, 6));
+        JPanel downPanel = new JPanel(new GridLayout(1, 4, 6, 6));
 
         for (int i = 0; i < 8; i++) {
             JButton button = new JButton();
@@ -145,20 +139,22 @@ public class SolitaireGame extends JFrame {
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setTransferHandler(new TableauTransferHandler(i));
             tableauButtons[i] = button;
-
-            constraints.gridx = i == 4 ? i + 1 : i;
-            constraints.weightx = 1.0;
-            constraints.insets = new Insets(0, i == 0 ? 0 : 3, 0, i == 7 ? 0 : 3);
-            panel.add(button, constraints);
+            if (i < 4) {
+                upPanel.add(button);
+            } else {
+                downPanel.add(button);
+            }
         }
 
-        JSeparator divider = new JSeparator(SwingConstants.VERTICAL);
-        divider.setPreferredSize(new Dimension(2, 1));
-        constraints.gridx = 4;
-        constraints.weightx = 0;
-        constraints.fill = GridBagConstraints.VERTICAL;
-        constraints.insets = new Insets(4, 2, 4, 2);
-        panel.add(divider, constraints);
+        JPanel divider = new JPanel();
+        divider.setBackground(new Color(145, 145, 145));
+        divider.setPreferredSize(new Dimension(2, 118));
+
+        JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        rowPanel.add(upPanel);
+        rowPanel.add(divider);
+        rowPanel.add(downPanel);
+        panel.add(rowPanel, BorderLayout.CENTER);
 
         return panel;
     }
