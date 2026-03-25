@@ -58,19 +58,12 @@ public class SolitaireGame extends JFrame {
         add(buildValuePilesPanel(), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
-        JButton drawButton = new JButton("Draw");
-        drawButton.addActionListener(e -> onDraw());
         JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> confirmAndStartNewGame());
 
-        JPanel drawPanel = new JPanel(new BorderLayout(8, 8));
-        drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
-        JPanel drawControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        drawControlsPanel.add(drawButton);
-        drawControlsPanel.add(drawLabel);
-        drawPanel.add(drawControlsPanel, BorderLayout.CENTER);
-        drawPanel.add(newGameButton, BorderLayout.SOUTH);
-        bottomPanel.add(drawPanel, BorderLayout.WEST);
+        JPanel newGamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        newGamePanel.add(newGameButton);
+        bottomPanel.add(newGamePanel, BorderLayout.WEST);
 
         JPanel heldPanel = new JPanel(new BorderLayout(8, 8));
         heldPanel.setBorder(BorderFactory.createTitledBorder("Picked-up Value Pile"));
@@ -91,26 +84,50 @@ public class SolitaireGame extends JFrame {
     }
 
     private JPanel buildValuePilesPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 13, 4, 4));
+        JPanel panel = new JPanel(new GridLayout(2, 7, 4, 4));
         panel.setBorder(BorderFactory.createTitledBorder("Value Piles (drag top card onto a tableau)"));
 
         Rank[] ranks = Rank.values();
-        for (int i = 0; i < ranks.length; i++) {
-            Rank rank = ranks[i];
-            JButton button = new JButton(rank.label);
-            button.setVerticalTextPosition(SwingConstants.BOTTOM);
-            button.setHorizontalTextPosition(SwingConstants.CENTER);
-            button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
-            installDragSource(button);
-            valuePileButtons[i] = button;
-            panel.add(button);
+        for (int i = 0; i <= 6; i++) {
+            panel.add(createValuePileButton(ranks[i], i));
+        }
+
+        for (int i = 7; i < ranks.length; i++) {
+            if (i == 10) {
+                panel.add(buildDrawControlsPanel());
+            }
+            panel.add(createValuePileButton(ranks[i], i));
         }
 
         return panel;
     }
 
+    private JButton createValuePileButton(Rank rank, int index) {
+        JButton button = new JButton(rank.label);
+        button.setVerticalTextPosition(SwingConstants.BOTTOM);
+        button.setHorizontalTextPosition(SwingConstants.CENTER);
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
+        installDragSource(button);
+        valuePileButtons[index] = button;
+        return button;
+    }
+
+    private JPanel buildDrawControlsPanel() {
+        JPanel drawControlsPanel = new JPanel(new BorderLayout(4, 4));
+        drawControlsPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
+
+        JButton drawButton = new JButton("Draw");
+        drawButton.addActionListener(e -> onDraw());
+
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+        controls.add(drawButton);
+        controls.add(drawLabel);
+        drawControlsPanel.add(controls, BorderLayout.CENTER);
+        return drawControlsPanel;
+    }
+
     private JPanel buildTableauPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 4, 6, 6));
+        JPanel panel = new JPanel(new GridLayout(1, 8, 6, 6));
         panel.setBorder(BorderFactory.createTitledBorder("Tableaus (drop cards here)"));
 
         for (int i = 0; i < 8; i++) {
