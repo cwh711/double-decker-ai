@@ -3,9 +3,12 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -26,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
@@ -127,8 +131,13 @@ public class SolitaireGame extends JFrame {
     }
 
     private JPanel buildTableauPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 8, 6, 6));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Tableaus (drop cards here)"));
+
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridy = 0;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.weighty = 1.0;
 
         for (int i = 0; i < 8; i++) {
             JButton button = new JButton();
@@ -136,8 +145,20 @@ public class SolitaireGame extends JFrame {
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setTransferHandler(new TableauTransferHandler(i));
             tableauButtons[i] = button;
-            panel.add(button);
+
+            constraints.gridx = i == 4 ? i + 1 : i;
+            constraints.weightx = 1.0;
+            constraints.insets = new Insets(0, i == 0 ? 0 : 3, 0, i == 7 ? 0 : 3);
+            panel.add(button, constraints);
         }
+
+        JSeparator divider = new JSeparator(SwingConstants.VERTICAL);
+        divider.setPreferredSize(new Dimension(2, 1));
+        constraints.gridx = 4;
+        constraints.weightx = 0;
+        constraints.fill = GridBagConstraints.VERTICAL;
+        constraints.insets = new Insets(4, 2, 4, 2);
+        panel.add(divider, constraints);
 
         return panel;
     }
@@ -253,8 +274,8 @@ public class SolitaireGame extends JFrame {
             TableauPile tableau = state.tableaus.get(i);
             JButton button = tableauButtons[i];
             Card top = tableau.top();
-            String fallback = "[" + (i + 1) + "] " + tableau.label() + "\n(" + tableau.cards.size() + ")";
-            updateCardButton(button, top, fallback);
+            String fallback = "[" + (i + 1) + "] " + tableauDirectionLabel(tableau) + "\n(" + tableau.cards.size() + ")";
+            updateTableauButton(button, top, fallback, tableau.suit);
         }
 
         heldCardsPanel.removeAll();
@@ -297,8 +318,7 @@ public class SolitaireGame extends JFrame {
     private void updateCardButton(JButton button, Card card, String fallbackText) {
         button.setPreferredSize(new Dimension(90, 120));
         if (card == null) {
-            ImageIcon emptyIcon = loadEmptyTableauIconFromFallback(fallbackText, 74, 98);
-            button.setIcon(emptyIcon);
+            button.setIcon(null);
             button.setText("<html>" + fallbackText.replace("\n", "<br>") + "</html>");
             button.setVerticalTextPosition(SwingConstants.BOTTOM);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -317,13 +337,15 @@ public class SolitaireGame extends JFrame {
         }
     }
 
-    private ImageIcon loadEmptyTableauIconFromFallback(String fallbackText, int width, int height) {
-        for (Suit suit : Suit.values()) {
-            if (fallbackText.contains(suit.name())) {
-                return loadImageIcon(suit.fileName + "_empty.png", width, height);
-            }
+    private void updateTableauButton(JButton button, Card card, String fallbackText, Suit suit) {
+        updateCardButton(button, card, fallbackText);
+        if (card == null) {
+            button.setIcon(loadImageIcon(suit.fileName + "_empty.png", 74, 98));
         }
-        return null;
+    }
+
+    private String tableauDirectionLabel(TableauPile tableau) {
+        return tableau.direction == Direction.UP ? "A→K" : "K→A";
     }
 
     private ImageIcon loadCardIcon(Card card, int width, int height) {
