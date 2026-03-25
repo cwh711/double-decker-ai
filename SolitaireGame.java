@@ -58,19 +58,12 @@ public class SolitaireGame extends JFrame {
         add(buildValuePilesPanel(), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
-        JButton drawButton = new JButton("Draw");
-        drawButton.addActionListener(e -> onDraw());
         JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> confirmAndStartNewGame());
 
-        JPanel drawPanel = new JPanel(new BorderLayout(8, 8));
-        drawPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
-        JPanel drawControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        drawControlsPanel.add(drawButton);
-        drawControlsPanel.add(drawLabel);
-        drawPanel.add(drawControlsPanel, BorderLayout.CENTER);
-        drawPanel.add(newGameButton, BorderLayout.SOUTH);
-        bottomPanel.add(drawPanel, BorderLayout.WEST);
+        JPanel newGamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        newGamePanel.add(newGameButton);
+        bottomPanel.add(newGamePanel, BorderLayout.WEST);
 
         JPanel heldPanel = new JPanel(new BorderLayout(8, 8));
         heldPanel.setBorder(BorderFactory.createTitledBorder("Picked-up Value Pile"));
@@ -91,27 +84,54 @@ public class SolitaireGame extends JFrame {
     }
 
     private JPanel buildValuePilesPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 13, 4, 4));
+        JPanel panel = new JPanel(new GridLayout(2, 7, 4, 4));
         panel.setBorder(BorderFactory.createTitledBorder("Value Piles (drag top card onto a tableau)"));
 
         Rank[] ranks = Rank.values();
-        for (int i = 0; i < ranks.length; i++) {
-            Rank rank = ranks[i];
-            JButton button = new JButton(rank.label);
-            button.setVerticalTextPosition(SwingConstants.BOTTOM);
-            button.setHorizontalTextPosition(SwingConstants.CENTER);
-            button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
-            installDragSource(button);
-            valuePileButtons[i] = button;
-            panel.add(button);
+        for (int i = 0; i <= 6; i++) {
+            panel.add(createValuePileButton(ranks[i], i));
+        }
+
+        for (int i = 7; i < ranks.length; i++) {
+            if (i == 10) {
+                panel.add(buildDrawControlsPanel());
+            }
+            panel.add(createValuePileButton(ranks[i], i));
         }
 
         return panel;
     }
 
+    private JButton createValuePileButton(Rank rank, int index) {
+        JButton button = new JButton(rank.label);
+        button.setVerticalTextPosition(SwingConstants.BOTTOM);
+        button.setHorizontalTextPosition(SwingConstants.CENTER);
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
+        installDragSource(button);
+        valuePileButtons[index] = button;
+        return button;
+    }
+
+    private JPanel buildDrawControlsPanel() {
+        JPanel drawControlsPanel = new JPanel(new BorderLayout(4, 4));
+        drawControlsPanel.setBorder(BorderFactory.createTitledBorder("Draw Pile"));
+
+        JButton drawButton = new JButton("Draw");
+        drawButton.addActionListener(e -> onDraw());
+
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+        controls.add(drawButton);
+        controls.add(drawLabel);
+        drawControlsPanel.add(controls, BorderLayout.CENTER);
+        return drawControlsPanel;
+    }
+
     private JPanel buildTableauPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 4, 6, 6));
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Tableaus (drop cards here)"));
+
+        JPanel upPanel = new JPanel(new GridLayout(1, 4, 6, 6));
+        JPanel downPanel = new JPanel(new GridLayout(1, 4, 6, 6));
 
         for (int i = 0; i < 8; i++) {
             JButton button = new JButton();
@@ -119,8 +139,22 @@ public class SolitaireGame extends JFrame {
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setTransferHandler(new TableauTransferHandler(i));
             tableauButtons[i] = button;
-            panel.add(button);
+            if (i < 4) {
+                upPanel.add(button);
+            } else {
+                downPanel.add(button);
+            }
         }
+
+        JPanel divider = new JPanel();
+        divider.setBackground(new Color(145, 145, 145));
+        divider.setPreferredSize(new Dimension(2, 118));
+
+        JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        rowPanel.add(upPanel);
+        rowPanel.add(divider);
+        rowPanel.add(downPanel);
+        panel.add(rowPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -236,8 +270,8 @@ public class SolitaireGame extends JFrame {
             TableauPile tableau = state.tableaus.get(i);
             JButton button = tableauButtons[i];
             Card top = tableau.top();
-            String fallback = "[" + (i + 1) + "] " + tableau.label() + "\n(" + tableau.cards.size() + ")";
-            updateCardButton(button, top, fallback);
+            String fallback = "[" + (i + 1) + "] " + tableauDirectionLabel(tableau) + "\n(" + tableau.cards.size() + ")";
+            updateTableauButton(button, top, fallback, tableau.suit);
         }
 
         heldCardsPanel.removeAll();
@@ -280,8 +314,7 @@ public class SolitaireGame extends JFrame {
     private void updateCardButton(JButton button, Card card, String fallbackText) {
         button.setPreferredSize(new Dimension(90, 120));
         if (card == null) {
-            ImageIcon emptyIcon = loadEmptyTableauIconFromFallback(fallbackText, 74, 98);
-            button.setIcon(emptyIcon);
+            button.setIcon(null);
             button.setText("<html>" + fallbackText.replace("\n", "<br>") + "</html>");
             button.setVerticalTextPosition(SwingConstants.BOTTOM);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -300,13 +333,15 @@ public class SolitaireGame extends JFrame {
         }
     }
 
-    private ImageIcon loadEmptyTableauIconFromFallback(String fallbackText, int width, int height) {
-        for (Suit suit : Suit.values()) {
-            if (fallbackText.contains(suit.name())) {
-                return loadImageIcon(suit.fileName + "_empty.png", width, height);
-            }
+    private void updateTableauButton(JButton button, Card card, String fallbackText, Suit suit) {
+        updateCardButton(button, card, fallbackText);
+        if (card == null) {
+            button.setIcon(loadImageIcon(suit.fileName + "_empty.png", 74, 98));
         }
-        return null;
+    }
+
+    private String tableauDirectionLabel(TableauPile tableau) {
+        return tableau.direction == Direction.UP ? "A→K" : "K→A";
     }
 
     private ImageIcon loadCardIcon(Card card, int width, int height) {
