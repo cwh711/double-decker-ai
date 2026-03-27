@@ -60,9 +60,12 @@ public class SolitaireGame extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> confirmAndStartNewGame());
+        JButton hintButton = new JButton("Hint");
+        hintButton.addActionListener(e -> showHint());
 
         JPanel newGamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
         newGamePanel.add(newGameButton);
+        newGamePanel.add(hintButton);
         bottomPanel.add(newGamePanel, BorderLayout.WEST);
 
         JPanel heldPanel = new JPanel(new BorderLayout(8, 8));
@@ -189,6 +192,20 @@ public class SolitaireGame extends JFrame {
 
         refreshUi();
         showGameOverDialogIfNeeded();
+    }
+
+    private void showHint() {
+        GameState.MoveHint hint = state.findAnyMoveHint();
+        if (hint == null) {
+            statusLabel.setText("No valid moves found. Draw from the draw pile.");
+            return;
+        }
+
+        TableauPile targetTableau = state.tableaus.get(hint.tableauIndex());
+        statusLabel.setText(
+                "Hint: play " + hint.card() + " from " + hint.sourceLabel()
+                        + " to tableau " + (hint.tableauIndex() + 1)
+                        + " (" + targetTableau.label() + ").");
     }
 
     private void confirmAndStartNewGame() {

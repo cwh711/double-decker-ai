@@ -126,32 +126,49 @@ public class GameState {
     }
 
     boolean canPlayAnyCard() {
-        for (Rank rank : Rank.values()) {
-            List<Card> pile = valuePiles.get(rank);
-            if (!pile.isEmpty() && canPlaceOnAnyTableau(pile.get(pile.size() - 1))) {
-                return true;
-            }
-        }
-        if (heldPile != null) {
-            for (Card card : heldPile) {
-                if (canPlaceOnAnyTableau(card)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean canPlaceOnAnyTableau(Card card) {
-        for (TableauPile tableau : tableaus) {
-            if (tableau.canPlace(card)) {
-                return true;
-            }
-        }
-        return false;
+        return findAnyMoveHint() != null;
     }
 
     boolean isGameOver() {
         return drawPile.isEmpty() && !canPlayAnyCard();
+    }
+
+    MoveHint findAnyMoveHint() {
+        for (Rank rank : Rank.values()) {
+            List<Card> pile = valuePiles.get(rank);
+            if (pile.isEmpty()) {
+                continue;
+            }
+            Card topCard = pile.get(pile.size() - 1);
+            int tableauIndex = firstPlayableTableau(topCard);
+            if (tableauIndex >= 0) {
+                return new MoveHint(topCard, "value pile " + rank.label, tableauIndex);
+            }
+        }
+
+        if (heldPile == null) {
+            return null;
+        }
+
+        for (Card card : heldPile) {
+            int tableauIndex = firstPlayableTableau(card);
+            if (tableauIndex >= 0) {
+                return new MoveHint(card, "held pile " + heldRank.label, tableauIndex);
+            }
+        }
+
+        return null;
+    }
+
+    private int firstPlayableTableau(Card card) {
+        for (int i = 0; i < tableaus.size(); i++) {
+            if (tableaus.get(i).canPlace(card)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    record MoveHint(Card card, String sourceLabel, int tableauIndex) {
     }
 }

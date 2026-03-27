@@ -5,6 +5,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -132,6 +133,29 @@ public class GameStateTest {
 
         state.valuePiles.get(Rank.A).clear();
         assertTrue(state.isGameOver());
+    }
+
+    @Test
+    public void findAnyMoveHintReturnsValuePileMoveWhenAvailable() {
+        GameState state = blankState();
+        Card aceOfClubs = card(Suit.CLUBS, Rank.A);
+        state.valuePiles.get(Rank.A).add(aceOfClubs);
+
+        GameState.MoveHint hint = state.findAnyMoveHint();
+
+        assertNotNull(hint);
+        assertEquals(aceOfClubs, hint.card());
+        assertEquals("value pile A", hint.sourceLabel());
+        assertEquals(0, hint.tableauIndex());
+    }
+
+    @Test
+    public void findAnyMoveHintReturnsNullWhenNoMovesExist() {
+        GameState state = blankState();
+        state.heldPile = new ArrayList<>(List.of(card(Suit.DIAMONDS, Rank.SEVEN)));
+        state.heldRank = Rank.SEVEN;
+
+        assertNull(state.findAnyMoveHint());
     }
 
     private static GameState blankState() {
