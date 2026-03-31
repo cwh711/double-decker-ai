@@ -259,7 +259,7 @@ public class SolitaireGame extends JFrame {
                 Object payload = source.getClientProperty("dragSelection");
                 if (payload != null) {
                     DragSelection selection = DragSelection.decode(payload.toString());
-                    transferHandler.configureDragImage(button, e.getPoint());
+                    transferHandler.configureDragImage(button);
                     if (selection.valueRank() != null) {
                         dragPreviewSelection = selection;
                         refreshUi();
@@ -414,13 +414,13 @@ public class SolitaireGame extends JFrame {
     }
 
     private class DragSourceTransferHandler extends TransferHandler {
-        void configureDragImage(JButton button, Point dragOrigin) {
+        void configureDragImage(JButton button) {
             Icon icon = button.getIcon();
             if (icon instanceof ImageIcon imageIcon) {
                 setDragImage(imageIcon.getImage());
                 setDragImageOffset(new Point(
-                        Math.min(dragOrigin.x, imageIcon.getIconWidth() - 1),
-                        Math.min(dragOrigin.y, imageIcon.getIconHeight() - 1)));
+                        imageIcon.getIconWidth() / 2,
+                        imageIcon.getIconHeight() / 2));
                 return;
             }
 
