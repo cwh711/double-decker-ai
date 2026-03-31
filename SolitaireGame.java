@@ -278,7 +278,7 @@ public class SolitaireGame extends JFrame {
             JButton button = valuePileButtons[i];
             List<Card> pile = state.valuePiles.get(rank);
             Card top = cardShownForValuePile(rank, pile);
-            updateCardButton(button, top, rank.label + "\n(" + pile.size() + ")");
+            updateValuePileButton(button, rank, top, pile.size());
             button.putClientProperty("dragSelection", pile.isEmpty() ? null : new DragSelection(rank, null).encode());
             button.setBorder(UIManager.getBorder("Button.border"));
         }
@@ -287,7 +287,7 @@ public class SolitaireGame extends JFrame {
             TableauPile tableau = state.tableaus.get(i);
             JButton button = tableauButtons[i];
             Card top = tableau.top();
-            String fallback = "[" + (i + 1) + "] " + tableauDirectionLabel(tableau) + "\n(" + tableau.cards.size() + ")";
+            String fallback = tableauDirectionLabel(tableau);
             updateTableauButton(button, top, fallback, tableau.suit);
         }
 
@@ -354,6 +354,13 @@ public class SolitaireGame extends JFrame {
         updateCardButton(button, card, fallbackText);
         if (card == null) {
             button.setIcon(loadImageIcon(suit.fileName + "_empty.png", 74, 98));
+        }
+    }
+
+    private void updateValuePileButton(JButton button, Rank rank, Card card, int pileSize) {
+        updateCardButton(button, card, rank.label + "\n(" + pileSize + ")");
+        if (card == null) {
+            button.setIcon(loadImageIcon("empty_" + rank.fileName + ".png", 74, 98));
         }
     }
 
