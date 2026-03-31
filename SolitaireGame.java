@@ -419,8 +419,8 @@ public class SolitaireGame extends JFrame {
             if (icon instanceof ImageIcon imageIcon) {
                 setDragImage(imageIcon.getImage());
                 setDragImageOffset(new Point(
-                        imageIcon.getIconWidth() / 2,
-                        imageIcon.getIconHeight() / 2));
+                        -(imageIcon.getIconWidth() / 2),
+                        -(imageIcon.getIconHeight() / 2)));
                 return;
             }
 
